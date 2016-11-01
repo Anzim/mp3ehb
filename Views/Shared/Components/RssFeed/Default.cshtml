@@ -1,0 +1,14 @@
+﻿@model FeedList
+<div>
+    <h3><a href="@Model.Link">@Model.Title</a></h3>
+    <h4>@Model.Description</h4>
+    <ul>
+        @foreach (var feedItem in Model.Items)
+        {
+            <li>
+                <h4><a href="@feedItem.Link" alt="@feedItem.Description">@feedItem.Title</a></h4>
+                @Html.Raw(feedItem.Content)
+            </li>
+        }
+    </ul>
+</div>

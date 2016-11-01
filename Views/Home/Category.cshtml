@@ -1,0 +1,34 @@
+﻿@{
+    ViewData["Title"] = Html.Raw(Model.Title);
+}
+@Html.Raw(Model.Description)
+
+@if (Model.Children != null)
+{
+    <div>
+        <ul>
+        @*<li><a asp-area="" asp-controller="Home" asp-action="Category">@category.Title</a></li>*@
+        @foreach (var category in Model.Children)
+        {
+            <li><a href="~/@category.Path">@Html.Raw(category.Title)</a></li>
+        }
+        </ul>
+    </div>
+}
+
+<div>
+    @if(Model.Contents == null)
+    {
+        <p> В данной категории нет статей.</p>
+    }
+    else
+    {
+        <ul>
+            @*<li><a asp-area="" asp-controller="Home" asp-action="Category">@category.Title</a></li>*@
+            @foreach (ContentLink content in Model.Contents)
+            {
+                <li><a href="~/@Model.Path/@content.Alias">@Html.Raw(content.Title)</a></li>
+            }
+        </ul>
+    }
+</div>
