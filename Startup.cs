@@ -19,13 +19,18 @@ namespace mp3ehb.core1
 {
     public class Startup
     {
-        public Startup(IHostingEnvironment env)
+        private readonly ILogger _logger;
+
+        public Startup(IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
+            _logger = loggerFactory.CreateLogger("AppSettings");
+
+            _logger.LogInformation($"AppSettings for connection strings file name: appsettings.{env.EnvironmentName}.json");
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
-                .AddJsonFile("appsettings.providers.json", optional: false)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: false, reloadOnChange: true)
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
         }
@@ -41,27 +46,27 @@ namespace mp3ehb.core1
             //services.AddScoped<IRestaurantData, InMemoryRestaurantData>();
             services.AddRouting();
             var connectionString = Configuration.GetConnectionString("DataAccessMySqlProvider");
+            _logger.LogInformation($"DataAccessMySqlProvider connection string: {connectionString}");
             if (connectionString != null)
             {
-                services.AddDbContext<Mp3EhbContext>(options =>
-                        options.UseMySQL(connectionString));
+                services.AddDbContext<Mp3EhbContext>(options => options.UseMySQL(connectionString));
             }
             else
             {
                 connectionString = Configuration.GetConnectionString("DataAccessPostgreSqlProvider");
+                //_logger.LogInformation($"DataAccessMySqlProvider connection string: {connectionString}");
                 if (connectionString != null)
                 {
-                    services.AddDbContext<Mp3EhbContext>(options =>
-                            options.UseNpgsql(connectionString));
+                    services.AddDbContext<Mp3EhbContext>(options => options.UseNpgsql(connectionString));
 
                 }
                 else
                 {
                     connectionString = Configuration.GetConnectionString("DataAccessMSSqlProvider");
+                    //_logger.LogInformation($"DataAccessMySqlProvider connection string: {connectionString}");
                     if (connectionString != null)
                     {
-                        services.AddDbContext<Mp3EhbContext>(options =>
-                                options.UseSqlServer(connectionString));
+                        services.AddDbContext<Mp3EhbContext>(options => options.UseSqlServer(connectionString));
                     }
                 }
             }
@@ -72,10 +77,12 @@ namespace mp3ehb.core1
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
 
             if (env.IsDevelopment())
             {
+                loggerFactory.AddProvider(new DbLoggerProvider());
+                loggerFactory.AddDebug();
+
                 app.UseDeveloperExceptionPage();
                 app.UseBrowserLink();
             }
@@ -111,7 +118,7 @@ namespace mp3ehb.core1
             //var routeBuilder = new RouteBuilder(app);//, contentRouteHandler);
 
             //routeBuilder.MapGet("{*path}", ContentHandler);
-               
+
 
             //routeBuilder.MapRoute(
             //    "Track Package Route",

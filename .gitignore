@@ -243,4 +243,5 @@ ModelManifest.xml
 .fake/
 
 *.swp
-appsettings.providers.json
+appsettings.*.json
+
