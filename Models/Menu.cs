@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace mp3ehb.core1.Models
+﻿namespace mp3ehb.core1.Models
 {
     public partial class Menu
     {

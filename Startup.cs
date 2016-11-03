@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using mp3ehb.core1.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using MySQL.Data.Entity.Extensions;
-
-//using MySQL.Data.EntityFrameworkCore.Extensions;
 
 namespace mp3ehb.core1
 {
@@ -23,8 +18,7 @@ namespace mp3ehb.core1
 
         public Startup(IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
-            _logger = loggerFactory.CreateLogger("AppSettings");
-
+            _logger = loggerFactory.CreateLogger("startup");
             _logger.LogInformation($"AppSettings for connection strings file name: appsettings.{env.EnvironmentName}.json");
 
             var builder = new ConfigurationBuilder()
@@ -42,35 +36,31 @@ namespace mp3ehb.core1
         {
             // Add framework services.
             services.AddMvc();
-            services.AddSingleton(provider => Configuration);
-            //services.AddScoped<IRestaurantData, InMemoryRestaurantData>();
+            services.AddSingleton<IConfiguration>(provider => Configuration);
             services.AddRouting();
             var connectionString = Configuration.GetConnectionString("DataAccessMySqlProvider");
-            _logger.LogInformation($"DataAccessMySqlProvider connection string: {connectionString}");
             if (connectionString != null)
             {
                 services.AddDbContext<Mp3EhbContext>(options => options.UseMySQL(connectionString));
             }
             else
             {
+                _logger.LogInformation("DataAccessPostgreSqlProvider connection string is not provided");
                 connectionString = Configuration.GetConnectionString("DataAccessPostgreSqlProvider");
-                //_logger.LogInformation($"DataAccessMySqlProvider connection string: {connectionString}");
                 if (connectionString != null)
                 {
                     services.AddDbContext<Mp3EhbContext>(options => options.UseNpgsql(connectionString));
-
                 }
                 else
                 {
+                    _logger.LogInformation("DataAccessMSSqlProvider connection string is not provided");
                     connectionString = Configuration.GetConnectionString("DataAccessMSSqlProvider");
-                    //_logger.LogInformation($"DataAccessMySqlProvider connection string: {connectionString}");
                     if (connectionString != null)
                     {
                         services.AddDbContext<Mp3EhbContext>(options => options.UseSqlServer(connectionString));
                     }
                 }
             }
-            //services.AddDbContext<Mp3EhbContext>(contextLifetime: ServiceLifetime.Scoped);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -100,6 +90,20 @@ namespace mp3ehb.core1
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+
+            app.UseServerAddressesFromConfig(Configuration.GetSection("HostSettings:Addresses"));
+
+            //var serverAddresses = Configuration
+            //    .GetSection("HostSettings:Addresses")?
+            //    .GetChildren()?
+            //    .Select(a => a.Value)?
+            //    .ToList();
+
+            //if (serverAddresses != null && serverAddresses.Count > 0)
+            //{
+            //    app.ServerFeatures.Set<IServerAddressesFeature>(new ServerDynamicAddressesFeature(serverAddresses));
+            //}
+
 
             //var trackPackageRouteHandler = new RouteHandler(context =>
             //{
@@ -159,4 +163,32 @@ namespace mp3ehb.core1
         //}
     }
 
+    public static class ServerAddressesFromConfigExtension
+    {
+        public static bool UseServerAddressesFromConfig(this IApplicationBuilder app, IConfiguration config)
+        {
+            var serverAddresses = config?
+                /*.GetSection("HostSettings:Addresses")*/
+                .GetChildren()?
+                .Select(a => a.Value)?
+                .ToList();
+
+            var result = serverAddresses != null && serverAddresses.Count > 0;
+            if (result)
+            {
+                app.ServerFeatures.Set<IServerAddressesFeature>(new ServerAddressesFromConfigFeature(serverAddresses));
+            }
+
+            return result;
+        }
+    }
+
+    public class ServerAddressesFromConfigFeature : IServerAddressesFeature
+    {
+        public ServerAddressesFromConfigFeature(ICollection<string> addresses)
+        {
+            Addresses = addresses;
+        }
+        public ICollection<string> Addresses { get; }
+    }
 }

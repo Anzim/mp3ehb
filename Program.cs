@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace mp3ehb.core1
@@ -15,10 +14,9 @@ namespace mp3ehb.core1
             var host = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
+                .ConfigureLogging(f => f.AddConsole(LogLevel.Information))
                 .UseIISIntegration()
-                .ConfigureLogging(f => f.AddConsole(LogLevel.Debug))
-		.UseStartup<Startup>()
-                .UseUrls("http://localhost:6000/")
+                .UseStartup<Startup>()
                 .Build();
 
             host.Run();

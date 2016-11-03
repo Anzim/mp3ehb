@@ -7,7 +7,6 @@ using System.Linq;
 using System.Xml.Linq;
 using mp3ehb.core1.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace mp3ehb.core1.ViewComponents
