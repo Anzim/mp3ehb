@@ -18,7 +18,7 @@ namespace mp3ehb.core1
                 .UseIISIntegration()
                 .ConfigureLogging(f => f.AddConsole(LogLevel.Debug))
 		.UseStartup<Startup>()
-                .UseUrls("http://localhost:5005/")
+                .UseUrls("http://localhost:6000/")
                 .Build();
 
             host.Run();
