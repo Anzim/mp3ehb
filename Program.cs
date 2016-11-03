@@ -15,6 +15,7 @@ namespace mp3ehb.core1
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .ConfigureLogging(f => f.AddConsole(LogLevel.Information))
+                .UseUrls("http://localhost:5000/")
                 .UseIISIntegration()
                 .UseStartup<Startup>()
                 .Build();

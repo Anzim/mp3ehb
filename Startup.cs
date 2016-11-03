@@ -36,7 +36,7 @@ namespace mp3ehb.core1
         {
             // Add framework services.
             services.AddMvc();
-            services.AddSingleton<IConfiguration>(provider => Configuration);
+            services.AddSingleton<IConfigurationRoot>(provider => Configuration);
             services.AddRouting();
             var connectionString = Configuration.GetConnectionString("DataAccessMySqlProvider");
             if (connectionString != null)
@@ -91,7 +91,10 @@ namespace mp3ehb.core1
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
 
-            app.UseServerAddressesFromConfig(Configuration.GetSection("HostSettings:Addresses"));
+            //app.UseServerAddressesFromConfig(Configuration.GetSection("HostSettings:Addresses"));
+            //var addresses = app.ServerFeatures.Get<IServerAddressesFeature>().Addresses;
+            //var addressesString = string.Join(",", addresses.ToArray());
+            //_logger.LogInformation($"Server addresses: {addressesString}");
 
             //var serverAddresses = Configuration
             //    .GetSection("HostSettings:Addresses")?
@@ -163,32 +166,32 @@ namespace mp3ehb.core1
         //}
     }
 
-    public static class ServerAddressesFromConfigExtension
-    {
-        public static bool UseServerAddressesFromConfig(this IApplicationBuilder app, IConfiguration config)
-        {
-            var serverAddresses = config?
-                /*.GetSection("HostSettings:Addresses")*/
-                .GetChildren()?
-                .Select(a => a.Value)?
-                .ToList();
+    //public static class ServerAddressesFromConfigExtension
+    //{
+    //    public static bool UseServerAddressesFromConfig(this IApplicationBuilder app, IConfiguration config)
+    //    {
+    //        var serverAddresses = config?
+    //            /*.GetSection("HostSettings:Addresses")*/
+    //            .GetChildren()?
+    //            .Select(a => a.Value)?
+    //            .ToList();
 
-            var result = serverAddresses != null && serverAddresses.Count > 0;
-            if (result)
-            {
-                app.ServerFeatures.Set<IServerAddressesFeature>(new ServerAddressesFromConfigFeature(serverAddresses));
-            }
+    //        var result = serverAddresses != null && serverAddresses.Count > 0;
+    //        if (result)
+    //        {
+    //            app.ServerFeatures.Set<IServerAddressesFeature>(new ServerAddressesFromConfigFeature(serverAddresses));
+    //        }
 
-            return result;
-        }
-    }
+    //        return result;
+    //    }
+    //}
 
-    public class ServerAddressesFromConfigFeature : IServerAddressesFeature
-    {
-        public ServerAddressesFromConfigFeature(ICollection<string> addresses)
-        {
-            Addresses = addresses;
-        }
-        public ICollection<string> Addresses { get; }
-    }
+    //public class ServerAddressesFromConfigFeature : IServerAddressesFeature
+    //{
+    //    public ServerAddressesFromConfigFeature(ICollection<string> addresses)
+    //    {
+    //        Addresses = addresses;
+    //    }
+    //    public ICollection<string> Addresses { get; }
+    //}
 }
