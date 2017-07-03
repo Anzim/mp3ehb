@@ -1,28 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace mp3ehb.core1.Models
+namespace mp3ehb.Entities
 {
     public partial class Mp3EhbContext : DbContext
     {
-        private static int _instanceCount = 0;
-        private string _connectionString; // = @"Server=localhost;Database=mp3-ehb;Trusted_Connection=True;";
-        public Mp3EhbContext(DbContextOptions<Mp3EhbContext> options) : base(options)
-        {
-            _instanceCount += 1;
-        }
+        //private const string CONNECTION_STRING = @"Server=localhost;Database=mp3-ehb;Trusted_Connection=True;";
 
-        //public Mp3EhbContext(IConfigurationRoot configuration)
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         //{
-        //    _instanceCount += 1;
-        //    _connectionString = configuration.GetConnectionString("Mp3EhbDatabase");
+        //    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
+        //    optionsBuilder.UseSqlServer(Mp3EhbContext.CONNECTION_STRING);
         //}
-
-//        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//        {
-////#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-//            optionsBuilder.UseSqlServer(_connectionString);
-//        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -545,19 +534,6 @@ namespace mp3ehb.core1.Models
         public virtual DbSet<Content> Contents { get; set; }
         public virtual DbSet<FeedItem> FeedItems { get; set; }
         public virtual DbSet<FeedList> FeedLists { get; set; }
-        //public virtual DbSet<Menu> Menu { get; set; }
 
-        // Unable to generate entity type for table 'dbo.content_frontpage'. Please see the warning messages.
-
-        public override void Dispose()
-        {
-            base.Dispose();
-            _instanceCount = -1;
-        }
-
-        //~Mp3EhbContext()
-        //{
-        //    Dispose();
-        //}
     }
 }

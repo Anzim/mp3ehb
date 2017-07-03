@@ -1,4 +1,4 @@
-﻿namespace mp3ehb.core1.Models
+﻿namespace mp3ehb.Entities
 {
     public partial class Menu
     {

@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace mp3ehb.core1.Models
+namespace mp3ehb.Entities
 {
+    /// <Author>Andriy Zymenko</Author>
+    /// <summary>
+    /// The Feed List Entity
+    /// </summary>
     public class FeedList
     {
         public int Id { get; set; }
@@ -13,6 +17,5 @@ namespace mp3ehb.core1.Models
         public DateTime PublishDate { get; set; }
         public DateTime RetrievalDate { get; set; }
         public virtual ICollection<FeedItem> Items { get; set; }
-        
     }
 }

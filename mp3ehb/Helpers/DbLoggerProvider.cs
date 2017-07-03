@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
 
-namespace mp3ehb.core1
+namespace mp3ehb.Helpers
 {
         public class DbLoggerProvider : ILoggerProvider
         {

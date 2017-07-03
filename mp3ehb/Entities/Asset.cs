@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 
-namespace mp3ehb.core1.Models
+namespace mp3ehb.Entities
 {
     public partial class Asset
     {
         public Asset()
         {
-            Categories = new HashSet<Category>();
-            Contents = new HashSet<Content>();
+            this.Categories = new HashSet<Category>();
+            this.Contents = new HashSet<Content>();
         }
 
         public int Id { get; set; }

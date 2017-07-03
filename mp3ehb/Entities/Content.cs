@@ -1,13 +1,7 @@
 ﻿using System.Collections.Generic;
 
-namespace mp3ehb.core1.Models
+namespace mp3ehb.Entities
 {
-    public partial class ContentLink
-    {
-        public string Title { get; set; }
-        public string Alias { get; set; }
-    }
-
     public partial class Content
     {
         public int Id { get; set; }

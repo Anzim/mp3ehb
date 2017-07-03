@@ -1,31 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Linq;
 using System.Xml.Linq;
-using mp3ehb.core1.Models;
+using mp3ehb.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-namespace mp3ehb.core1.ViewComponents
+namespace mp3ehb.ViewComponents
 {
     public class RssFeedViewComponent : ViewComponent
     {
+        private const string GET_NEWSFEED_ERROR_MESSAGE = "Ошибка получения ленты новостей ";
+        private const string ERROR_TITLE = "Ошибка";
+        private const string NO_NEWSFEED_SOURCE_IN_CONFIG = "В настройках не указан источник ленты новостей ";
+        private const string NEWSFEED_DATETIME_FORMAT = "ddd, dd MMM yyyy HH:mm:ss K";
+
+        private const string RSSFEEDS_SECTION = "RssFeeds";
+        private const string DEFAULT_FEED_NAME = "Default";
+        private const string RSS_FEED_SETTINGS_URL_KEY = "Url";
+
         private readonly IConfigurationSection _rssFeedsSection;
         private readonly Dictionary<string, FeedList> _rssFeeds;
 
         public RssFeedViewComponent(IConfigurationRoot configuration)
         {
-            _rssFeedsSection = configuration.GetSection("RssFeeds");
-            _rssFeeds = new Dictionary<string, FeedList>();
+            this._rssFeedsSection = configuration.GetSection(RSSFEEDS_SECTION);
+            this._rssFeeds = new Dictionary<string, FeedList>();
         }
 
-        public async Task<IViewComponentResult> InvokeAsync(string feedName = "Default")
+        public async Task<IViewComponentResult> InvokeAsync(string feedName = DEFAULT_FEED_NAME)
         {
-            var feedList = _rssFeeds.ContainsKey(feedName) ? _rssFeeds[feedName] : _rssFeeds[feedName] = CreateErrorFeedList(feedName);
-            var task = RetrieveFeed(feedName).ContinueWith<FeedList>(SaveFeedListIfNeeded);
+            var feedList = this._rssFeeds.ContainsKey(feedName) ? this._rssFeeds[feedName] : this._rssFeeds[feedName] = CreateErrorFeedList(feedName);
+            var task = this.RetrieveFeed(feedName).ContinueWith<FeedList>(this.SaveFeedListIfNeeded);
             if (feedList.PublishDate == default(DateTime))
             {
                 feedList = await task;
@@ -39,8 +48,8 @@ namespace mp3ehb.core1.ViewComponents
             return new FeedList
             {
                 Name = feedName,
-                Title = "Ошибка",
-                Description = "Ошибка получения ленты новостей " + feedName,
+                Title = ERROR_TITLE,
+                Description = GET_NEWSFEED_ERROR_MESSAGE + feedName,
                 RetrievalDate = DateTime.Now
             };
         }
@@ -50,7 +59,7 @@ namespace mp3ehb.core1.ViewComponents
             var feedList = task.Result;
             if (!task.IsCompleted || feedList == null) return CreateErrorFeedList("");
             //todo: implement SaveFeedListIfNeeded saving to DB
-            _rssFeeds[feedList.Name] = feedList;
+            this._rssFeeds[feedList.Name] = feedList;
             return feedList;
         }
 
@@ -59,18 +68,18 @@ namespace mp3ehb.core1.ViewComponents
             var feedList = CreateErrorFeedList(feedName);
             try
             {
-                var rssFeedSettings = _rssFeedsSection?.GetSection(feedName);
-                var feedUrl = rssFeedSettings?["Url"]; // "http://voiceofsufferers.org/feed";
+                var rssFeedSettings = this._rssFeedsSection?.GetSection(feedName);
+                var feedUrl = rssFeedSettings?[RSS_FEED_SETTINGS_URL_KEY]; // "http://voiceofsufferers.org/feed";
                 if (feedUrl == null)
                 {
-                    feedList.Description = "В настройках не указан источник ленты новостей " + feedName;
+                    feedList.Description = NO_NEWSFEED_SOURCE_IN_CONFIG + feedName;
                 }
                 else using (var client = new HttpClient())
                     {
                         client.BaseAddress = new Uri(feedUrl);
                         var responseMessage = await client.GetAsync(feedUrl);
                         var responseString = await responseMessage.Content.ReadAsStringAsync();
-                        await ExtractFeedListFromXmlAsync(responseString, feedList);
+                        await this.ExtractFeedListFromXmlAsync(responseString, feedList);
                     }
             }
             catch (Exception exception)
@@ -85,7 +94,7 @@ namespace mp3ehb.core1.ViewComponents
             return Task.Run(() =>
             {
                 XDocument doc = XDocument.Parse(responseString);
-                var channel = doc.Root.Descendants()
+                var channel = doc.Root?.Descendants()
                     .First(i => i.Name.LocalName == "channel")
                     .Elements().ToList();
                 //extract feed items
@@ -96,7 +105,7 @@ namespace mp3ehb.core1.ViewComponents
                         Description = item.Elements().First(i => i.Name.LocalName == "description").Value,
                         Content = item.Elements().First(i => i.Name.ToString().Contains("content")).Value,
                         Link = item.Elements().First(i => i.Name.LocalName == "link").Value,
-                        PublishDate = ParseDate(item.Elements().First(i => i.Name.LocalName == "pubDate").Value),
+                        PublishDate = this.ParseDate(item.Elements().First(i => i.Name.LocalName == "pubDate").Value),
                         Title = item.Elements().First(i => i.Name.LocalName == "title").Value
                     });
                 feedList.Items = feedItems.ToList();
@@ -104,26 +113,13 @@ namespace mp3ehb.core1.ViewComponents
                 feedList.Link = (channel.FirstOrDefault(i => i.Name.LocalName == "link")).Value;
                 feedList.Description = (channel.FirstOrDefault(i => i.Name.LocalName == "description")).Value;
                 var dtString = (channel.FirstOrDefault(i => i.Name.LocalName == "lastBuildDate")).Value;
-                feedList.PublishDate = ParseDate(dtString);
+                feedList.PublishDate = this.ParseDate(dtString);
             });
         }
-        /*Tue, 27 Sep 2016 22:02:45 +0000
-         * 'ddd, dd MMM yyyy HH:mm:ss K'
-          string[] dateStrings = {"2008-05-01T07:34:42-5:00", 
-                              "2008-05-01 7:34:42Z", 
-                              "Thu, 01 May 2008 07:34:42 GMT"};
-          foreach (string dateString in dateStrings)
-          {
-             DateTime convertedDate = DateTime.Parse(dateString);
-             Console.WriteLine("Converted {0} to {1} time {2}", 
-                               dateString, 
-                               convertedDate.Kind.ToString(), 
-                               convertedDate);
-          }       
-         */
+
         private DateTime ParseDate(string dtString, string format)
         {
-            DateTime result = default(DateTime);
+            DateTime result;
             bool valid = DateTime.TryParseExact(dtString, format, CultureInfo.InvariantCulture, 
                 DateTimeStyles.AssumeUniversal, out result);
             return result;
@@ -131,7 +127,7 @@ namespace mp3ehb.core1.ViewComponents
         private DateTime ParseDate(string dtString)
         {
             DateTime result;
-            bool valid = DateTime.TryParseExact(dtString, "ddd, dd MMM yyyy HH:mm:ss K", 
+            bool valid = DateTime.TryParseExact(dtString, NEWSFEED_DATETIME_FORMAT, 
                 CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result);
             if (!valid) valid = DateTime.TryParse(dtString, out result);
             if (!valid) result = default(DateTime);

@@ -1,7 +1,11 @@
 ﻿using System;
 
-namespace mp3ehb.core1.Models
+namespace mp3ehb.Entities
 {
+    /// <summary>
+    /// Feed List Item Entity
+    /// </summary>
+    /// <Author>Andriy Zymenko</Author>
     public class FeedItem
     {
         public int Id { get; set; }

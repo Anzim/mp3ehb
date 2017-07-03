@@ -4,27 +4,82 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using mp3ehb.core1.Models;
+using mp3ehb.Entities;
+using mp3ehb.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
-namespace mp3ehb.core1
+namespace mp3ehb.Middleware
 {
+    /// <summary>
+    /// This middleware transforms tree folder structure to MVC pipeline
+    /// </summary>
+    /// <Author>Andriy Zymenko</Author>
     public class ContentUrlRewritingMiddleware
     {
+        private const string HOME_CONTENT = "/Home/Content/";
+        private const string CATEGORY_ID = "CategoryId";
+        private const string HTML_TAIL = ".html";
+        private const char FOLDER_SEPARATOR_CHAR = '/';
+        private const string LOCATION_HEADER_NAME = "Location";
+
+        private static readonly Dictionary<string, int> MenuDictionary = new Dictionary<string, int>
+        {
+            ["hristianskie-knigi"] = 43,
+            ["msc-ehb"] = 55,
+            ["voskresnaya-shkola"] = 45,
+            ["traktaty"] = 46,
+            ["stories"] = 41,
+            ["textbooks"] = 37,
+            ["verses"] = 39,
+            ["scores"] = 38,
+            ["sites"] = 35,
+            ["materials"] = 53,
+            ["the-news"] = 52,
+            ["pomosch"] = 53,
+            ["ustav-msc-ehb"] = 55,
+            ["msc-ehb-music"] = 42,
+            ["novosti-msc-ehb"] = 44,
+            ["slidefilms"] = 40,
+            ["downloads"] = 1,
+            ["jdownloads"] = 1
+        };
+
+        private class TransformResult
+        {
+            public string NewPath { get; }
+            public TransformAction Action { get; }
+
+            public TransformResult(string newPath = null, TransformAction action = TransformAction.None)
+            {
+                this.NewPath = newPath;
+                this.Action = action;
+            }
+        }
+
+        private enum TransformAction
+        {
+            None,
+            Redirect,
+            Substitute
+        }
+
         private readonly RequestDelegate _next;
 
-        public ContentUrlRewritingMiddleware(RequestDelegate next) 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        /// <param name="next">The <see cref="RequestDelegate"/> instance</param>
+        public ContentUrlRewritingMiddleware(RequestDelegate next)
         {
-            _next = next;
+            this._next = next;
         }
 
         public async Task Invoke(HttpContext context, Mp3EhbContext dbContext)
         {
             var path = context.Request.Path.ToUriComponent();
-            //if (_dbContext == null) _dbContext = new Mp3EhbContext();
+            var transformResult = await this.TransformPathAsync(path, dbContext, context.Items);
 
-            var transformResult = await TransformPathAsync(path, dbContext, context.Items);
             //If is an category, change the request path to be "Content/Index/{path}" so it is handled by the content controller, index action
             switch (transformResult.Action)
             {
@@ -35,23 +90,24 @@ namespace mp3ehb.core1
                     break;
                 case TransformAction.Redirect:
                     context.Response.StatusCode = 302;
-                    context.Response.Headers.Add("Location", transformResult.NewPath);
+                    context.Response.Headers.Add(LOCATION_HEADER_NAME, transformResult.NewPath);
                     return;
                 case TransformAction.None:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            
-            await _next.Invoke(context);
+
+            await this._next.Invoke(context);
         }
 
-        private async Task<TransformResult> TransformPathAsync(string path, Mp3EhbContext dbContext, IDictionary<object, object> contextItems)
+        private async Task<TransformResult> TransformPathAsync(string path, Mp3EhbContext dbContext,
+            IDictionary<object, object> contextItems)
         {
             //The middleware will try to find a Category and a content in the database that matches the current path
             var transformResult = new TransformResult();
-            var trimmedPath = TrimTail(path, tail: ".html");
-            var names = trimmedPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var trimmedPath = path.TrimTail(tail: HTML_TAIL);
+            var names = trimmedPath.Split(new[] {FOLDER_SEPARATOR_CHAR}, StringSplitOptions.RemoveEmptyEntries);
             if (names.Length == 0) return transformResult; //None
 
             string bestMatchingPath = null;
@@ -97,17 +153,17 @@ namespace mp3ehb.core1
                     Expression<Func<Content, bool>> contentPredicate = c => c.Alias.Contains(name);
                     if (id != 0)
                     {
-                        contentPredicate = c => c.Id == id;// || c.Alias.Contains(name);
+                        contentPredicate = c => c.Id == id; // || c.Alias.Contains(name);
                     }
                     //The midleware will try to find a content in the database that matches the current name
                     var contents = dbContext.Contents.AsNoTracking();
                     var content = await contents
                         .Where(contentPredicate)
-                        .Select(c => new { c.Id, c.CatId, c.Alias })
+                        .Select(c => new {c.Id, c.CatId, c.Alias})
                         .FirstOrDefaultAsync();
                     if (content == null) break;
                     contentId = content.Id;
-                    correctPath = await GetCategoryPath(categores, content.CatId) + "/" + content.Alias;
+                    correctPath = await categores.GetCategoryPath(content.CatId) + "/" + content.Alias;
                     break;
                 }
                 bestMatchingPath = currentPath;
@@ -116,77 +172,25 @@ namespace mp3ehb.core1
 
             if (contentId != default(int))
             {
-                contextItems["ContentId"] = contentId;
+                contextItems[CATEGORY_ID] = contentId;
                 if (correctPath == path)
                 {
-                    return new TransformResult("/Home/Content/" + contentId, TransformAction.Substitute);
+                    return new TransformResult(HOME_CONTENT + contentId, TransformAction.Substitute);
                 }
             }
             else if (bestMatchingCategoryId != default(int))
             {
-                contextItems["CategoryId"] = bestMatchingCategoryId;
-                correctPath = await GetCategoryPath(categores, bestMatchingCategoryId);
+                contextItems[CATEGORY_ID] = bestMatchingCategoryId;
+                correctPath = await categores.GetCategoryPath(bestMatchingCategoryId);
                 if (correctPath == path)
                 {
-                    return new TransformResult("/Home/Category/" + bestMatchingCategoryId, TransformAction.Substitute);
+                    return new TransformResult(HOME_CONTENT + bestMatchingCategoryId, TransformAction.Substitute);
                 }
             }
             else return transformResult; //None
+
             return new TransformResult(correctPath, TransformAction.Redirect);
         }
 
-        private static async Task<string> GetCategoryPath(IQueryable<Category> categories, int id)
-        {
-            var path = await categories.Where(c => c.Id == id).Select(c => c.Path).FirstOrDefaultAsync();
-            return "/" + path;
-        }
-
-        private static string TrimTail(string text, string tail = "?")
-        {
-            var index = text.IndexOf(tail, StringComparison.OrdinalIgnoreCase);
-            var result = index > 0 ? text.Remove(index) : text;
-            return result;
-        }
-
-        private static readonly Dictionary<string, int> MenuDictionary = new Dictionary<string, int>
-        {
-            ["hristianskie-knigi"] = 43,
-            ["msc-ehb"] = 55,
-            ["voskresnaya-shkola"] = 45,
-            ["traktaty"] = 46,
-            ["stories"] = 41,
-            ["textbooks"] = 37,
-            ["verses"] = 39,
-            ["scores"] = 38,
-            ["sites"] = 35,
-            ["materials"] = 53,
-            ["the-news"] = 52,
-            ["pomosch"] = 53,
-            ["ustav-msc-ehb"] = 55,
-            ["msc-ehb-music"] = 42,
-            ["novosti-msc-ehb"] = 44,
-            ["slidefilms"] = 40,
-            ["downloads"] = 1,
-            ["jdownloads"] = 1
-        };
-    }
-
-    internal class TransformResult
-    {
-        public string NewPath { get; }
-        public TransformAction Action { get; }
-
-        public TransformResult(string newPath = null, TransformAction action = TransformAction.None)
-        {
-            NewPath = newPath;
-            Action = action;
-        }
-    }
-
-    internal enum TransformAction
-    {
-        None,
-        Redirect,
-        Substitute
     }
 }
