@@ -15,12 +15,14 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "mp3ehb.core1": {
+    "mp3ehb": {
       "commandName": "Project",
-      "launchUrl": "http://localhost:5000",
+      "launchBrowser": true,
+      "launchUrl": "http://localhost:5000/",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "applicationUrl": "http://localhost:5000/"
     }
   }
 }

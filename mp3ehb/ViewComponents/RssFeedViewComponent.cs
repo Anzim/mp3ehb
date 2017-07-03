@@ -75,12 +75,13 @@ namespace mp3ehb.ViewComponents
                     feedList.Description = NO_NEWSFEED_SOURCE_IN_CONFIG + feedName;
                 }
                 else using (var client = new HttpClient())
-                    {
-                        client.BaseAddress = new Uri(feedUrl);
-                        var responseMessage = await client.GetAsync(feedUrl);
-                        var responseString = await responseMessage.Content.ReadAsStringAsync();
-                        await this.ExtractFeedListFromXmlAsync(responseString, feedList);
-                    }
+                {
+                    feedList.Link = feedUrl;
+                    client.BaseAddress = new Uri(feedUrl);
+                    var responseMessage = await client.GetAsync(feedUrl);
+                    var responseString = await responseMessage.Content.ReadAsStringAsync();
+                    await this.ExtractFeedListFromXmlAsync(responseString, feedList);
+                }
             }
             catch (Exception exception)
             {
@@ -109,10 +110,10 @@ namespace mp3ehb.ViewComponents
                         Title = item.Elements().First(i => i.Name.LocalName == "title").Value
                     });
                 feedList.Items = feedItems.ToList();
-                feedList.Title = (channel.FirstOrDefault(i => i.Name.LocalName == "title")).Value;
-                feedList.Link = (channel.FirstOrDefault(i => i.Name.LocalName == "link")).Value;
-                feedList.Description = (channel.FirstOrDefault(i => i.Name.LocalName == "description")).Value;
-                var dtString = (channel.FirstOrDefault(i => i.Name.LocalName == "lastBuildDate")).Value;
+                feedList.Title = channel.FirstOrDefault(i => i.Name.LocalName == "title")?.Value;
+                feedList.Link = channel.FirstOrDefault(i => i.Name.LocalName == "link" && !i.IsEmpty)?.Value;
+                feedList.Description = channel.FirstOrDefault(i => i.Name.LocalName == "description")?.Value;
+                var dtString = channel.FirstOrDefault(i => i.Name.LocalName == "lastBuildDate")?.Value;
                 feedList.PublishDate = this.ParseDate(dtString);
             });
         }
