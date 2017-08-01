@@ -3,34 +3,37 @@ using Microsoft.Extensions.Logging;
 
 namespace mp3ehb.Helpers
 {
-        public class DbLoggerProvider : ILoggerProvider
+    /// <summary>
+    /// DbLoggerProvider class
+    /// </summary>
+    public class DbLoggerProvider : ILoggerProvider
+    {
+        public ILogger CreateLogger(string categoryName)
         {
-            public ILogger CreateLogger(string categoryName)
+            return new DbLogger();
+        }
+
+        public void Dispose()
+        {
+        }
+
+        private class DbLogger : ILogger
+        {
+            public bool IsEnabled(LogLevel logLevel)
             {
-                return new DbLogger();
+                return true;
             }
 
-            public void Dispose()
-            { }
-
-            private class DbLogger : ILogger
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
-                public bool IsEnabled(LogLevel logLevel)
-                {
-                    return true;
-                }
+                Console.WriteLine(formatter(state, exception));
+            }
 
-                public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-                {
-                    //File.AppendAllText(@"C:\temp\log.txt", formatter(state, exception));
-                    Console.WriteLine(formatter(state, exception));
-                }
-
-                public IDisposable BeginScope<TState>(TState state)
-                {
-                    return null;
-                }
+            public IDisposable BeginScope<TState>(TState state)
+            {
+                return null;
             }
         }
+    }
     
 }

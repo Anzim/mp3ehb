@@ -1,18 +1,45 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.Configuration;
 
 namespace mp3ehb.Entities
 {
+    /// <summary>
+    ///     Main application storage class
+    /// </summary>
     public partial class Mp3EhbContext : DbContext
     {
-        //private const string CONNECTION_STRING = @"Server=localhost;Database=mp3-ehb;Trusted_Connection=True;";
+        private const string MP3_EHB_DATABASE = "Mp3EhbDatabase";
 
-        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        //{
-        //    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-        //    optionsBuilder.UseSqlServer(Mp3EhbContext.CONNECTION_STRING);
-        //}
+        /// <summary>
+        ///     DB connection string
+        /// </summary>
+        private readonly string _connectionString;
 
+        /// <summary>
+        ///     Primary constructor for storage creation takes connection string from configuration
+        /// </summary>
+        /// <param name="configuration">The <see cref="IConfigurationRoot"/> instance</param>
+        public Mp3EhbContext(IConfigurationRoot configuration)
+        {
+            _connectionString = configuration.GetConnectionString(MP3_EHB_DATABASE);
+        }
+
+        /// <summary>
+        ///     Uses the DB connection string got from congiguration in primary constructor
+        /// </summary>
+        /// <param name="optionsBuilder"></param>
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlServer(_connectionString);
+        }
+
+        /// <summary>
+        ///     Let's configure the model that was discovered by convention from the entity types
+        /// </summary>
+        /// <param name="modelBuilder">
+        ///     The builder being used to construct the model for this context. 
+        /// </param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Asset>(entity =>
@@ -505,7 +532,7 @@ namespace mp3ehb.Entities
                 entity.Property(e => e.Description)
                     .HasMaxLength(1024);
                 entity.Property(e => e.Content)
-                    .HasColumnType("text"); 
+                    .HasColumnType("text");
                 entity.Property(e => e.Title)
                     .HasMaxLength(255);
                 entity.HasOne(d => d.Parent)
@@ -529,11 +556,15 @@ namespace mp3ehb.Entities
             });
         }
 
+
+        #region DbSets
+
         public virtual DbSet<Asset> Assets { get; set; }
         public virtual DbSet<Category> Categories { get; set; }
         public virtual DbSet<Content> Contents { get; set; }
         public virtual DbSet<FeedItem> FeedItems { get; set; }
         public virtual DbSet<FeedList> FeedLists { get; set; }
 
+        #endregion
     }
 }

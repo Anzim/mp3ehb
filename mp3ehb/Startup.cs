@@ -1,5 +1,4 @@
-﻿using System;
-using mp3ehb.Entities;
+﻿using mp3ehb.Entities;
 using mp3ehb.Helpers;
 using mp3ehb.Middleware;
 using Microsoft.AspNetCore.Builder;
@@ -12,8 +11,13 @@ using MySQL.Data.Entity.Extensions;
 
 namespace mp3ehb
 {
+    /// <summary>
+    /// Standard asp.net core Startup class
+    /// </summary>
     public class Startup
     {
+        #region Private constants
+
         private const string APPSETTINGS_FOR_CONNECTION_STRINGS_FILE_NAME_MESSAGE = "AppSettings for connection strings file name: appsettings.{0}.json";
 
         private const string MYSQL_PROVIDER_CONNECTION_STRING_KEY = "DataAccessMySqlProvider";
@@ -31,10 +35,16 @@ namespace mp3ehb
         private const string APPSETTINGS_JSON_FILE_NAME = "appsettings.json";
         private const string APPSETTINGS_ENVIRONMENT_JSON_FILE_NAME = "appsettings.{0}.json";
 
+        #endregion
+
         private readonly ILogger _logger;
 
         public IConfigurationRoot Configuration { get; }
 
+        /// <summary>
+        /// Startup constructor builds configuration from appsettings files
+        /// </summary>
+        /// <param name="env">The <see cref="IHostingEnvironment"/> instance</param>
         public Startup(IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             this._logger = loggerFactory.CreateLogger<Startup>();
@@ -50,7 +60,10 @@ namespace mp3ehb
             this.Configuration = builder.Build();
         }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+        /// <summary>
+        /// This method adds our services to the container.
+        /// </summary>
+        /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
@@ -86,7 +99,12 @@ namespace mp3ehb
             }
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// <summary>
+        /// This method configures the HTTP request pipeline.
+        /// </summary>
+        /// <param name="app">The <see cref="IApplicationBuilder"/> instance</param>
+        /// <param name="env">The <see cref="IHostingEnvironment"/> instance</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> instance</param>
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(this.Configuration.GetSection(LOGGING_SECTION_KEY));

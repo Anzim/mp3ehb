@@ -12,38 +12,30 @@ using Microsoft.EntityFrameworkCore;
 namespace mp3ehb.Middleware
 {
     /// <summary>
-    /// This middleware transforms tree folder structure to MVC pipeline
+    /// The middleware for routing hierarchical category structure
+    /// It transforms tree folder structure to MVC pipeline
     /// </summary>
     /// <Author>Andriy Zymenko</Author>
     public class ContentUrlRewritingMiddleware
     {
-        private const string HOME_CONTENT = "/Home/Content/";
-        private const string CATEGORY_ID = "CategoryId";
-        private const string HTML_TAIL = ".html";
-        private const char FOLDER_SEPARATOR_CHAR = '/';
-        private const string LOCATION_HEADER_NAME = "Location";
+        #region Private constants
 
-        private static readonly Dictionary<string, int> MenuDictionary = new Dictionary<string, int>
+        private const string HOME_CONTENT_URL = "/Home/Content/";
+        private const string HOME_CATEGORY_URL = "/Home/Category/";
+        private const string CATEGORY_REGEX_PATTERN = @"^(\d+)-(.*)$";
+        private const string CATEGORY_ID = "CategoryId";
+        private const string DEFAULT_EXTENSION = ".html";
+        private const string LOCATION_HEADER_NAME = "Location";
+        private const char FOLDER_SEPARATOR_CHAR = '/';
+
+        #endregion
+
+        private enum TransformAction
         {
-            ["hristianskie-knigi"] = 43,
-            ["msc-ehb"] = 55,
-            ["voskresnaya-shkola"] = 45,
-            ["traktaty"] = 46,
-            ["stories"] = 41,
-            ["textbooks"] = 37,
-            ["verses"] = 39,
-            ["scores"] = 38,
-            ["sites"] = 35,
-            ["materials"] = 53,
-            ["the-news"] = 52,
-            ["pomosch"] = 53,
-            ["ustav-msc-ehb"] = 55,
-            ["msc-ehb-music"] = 42,
-            ["novosti-msc-ehb"] = 44,
-            ["slidefilms"] = 40,
-            ["downloads"] = 1,
-            ["jdownloads"] = 1
-        };
+            None,
+            Redirect,
+            Substitute
+        }
 
         private class TransformResult
         {
@@ -55,13 +47,6 @@ namespace mp3ehb.Middleware
                 this.NewPath = newPath;
                 this.Action = action;
             }
-        }
-
-        private enum TransformAction
-        {
-            None,
-            Redirect,
-            Substitute
         }
 
         private readonly RequestDelegate _next;
@@ -101,12 +86,18 @@ namespace mp3ehb.Middleware
             await this._next.Invoke(context);
         }
 
+        /// <summary>
+        /// Converts hierarchical category structure to mvc route
+        /// </summary>
+        /// <param name="path">The route being processed</param>
+        /// <param name="dbContext">The main app storage: <see cref="Mp3EhbContext"/></param>
+        /// <returns></returns>
         private async Task<TransformResult> TransformPathAsync(string path, Mp3EhbContext dbContext,
             IDictionary<object, object> contextItems)
         {
             //The middleware will try to find a Category and a content in the database that matches the current path
             var transformResult = new TransformResult();
-            var trimmedPath = path.TrimTail(tail: HTML_TAIL);
+            var trimmedPath = path.TrimTail(tail: DEFAULT_EXTENSION);
             var names = trimmedPath.Split(new[] {FOLDER_SEPARATOR_CHAR}, StringSplitOptions.RemoveEmptyEntries);
             if (names.Length == 0) return transformResult; //None
 
@@ -175,7 +166,7 @@ namespace mp3ehb.Middleware
                 contextItems[CATEGORY_ID] = contentId;
                 if (correctPath == path)
                 {
-                    return new TransformResult(HOME_CONTENT + contentId, TransformAction.Substitute);
+                    return new TransformResult(HOME_CONTENT_URL + contentId, TransformAction.Substitute);
                 }
             }
             else if (bestMatchingCategoryId != default(int))
@@ -184,13 +175,39 @@ namespace mp3ehb.Middleware
                 correctPath = await categores.GetCategoryPath(bestMatchingCategoryId);
                 if (correctPath == path)
                 {
-                    return new TransformResult(HOME_CONTENT + bestMatchingCategoryId, TransformAction.Substitute);
+                    return new TransformResult(HOME_CONTENT_URL + bestMatchingCategoryId, TransformAction.Substitute);
                 }
             }
             else return transformResult; //None
 
             return new TransformResult(correctPath, TransformAction.Redirect);
         }
+
+        /// <summary>
+        /// Harcoded categories dictionary
+        /// </summary>
+        //todo: refactoring needed
+        private static readonly Dictionary<string, int> MenuDictionary = new Dictionary<string, int>
+        {
+            ["hristianskie-knigi"] = 43,
+            ["msc-ehb"] = 55,
+            ["voskresnaya-shkola"] = 45,
+            ["traktaty"] = 46,
+            ["stories"] = 41,
+            ["textbooks"] = 37,
+            ["verses"] = 39,
+            ["scores"] = 38,
+            ["sites"] = 35,
+            ["materials"] = 53,
+            ["the-news"] = 52,
+            ["pomosch"] = 53,
+            ["ustav-msc-ehb"] = 55,
+            ["msc-ehb-music"] = 42,
+            ["novosti-msc-ehb"] = 44,
+            ["slidefilms"] = 40,
+            ["downloads"] = 1,
+            ["jdownloads"] = 1
+        };
 
     }
 }

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace mp3ehb.Entities
 {
-    /// <Author>Andriy Zymenko</Author>
     /// <summary>
     /// The Feed List Entity
     /// </summary>
+    /// <Author>Andriy Zymenko</Author>
     public class FeedList
     {
         public int Id { get; set; }

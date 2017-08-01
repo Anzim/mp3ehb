@@ -11,8 +11,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace mp3ehb.ViewComponents
 {
+    /// <summary>
+    /// This View Component class displays RSS feed
+    /// </summary>
     public class RssFeedViewComponent : ViewComponent
     {
+        #region Private constants
+
         private const string GET_NEWSFEED_ERROR_MESSAGE = "Ошибка получения ленты новостей ";
         private const string ERROR_TITLE = "Ошибка";
         private const string NO_NEWSFEED_SOURCE_IN_CONFIG = "В настройках не указан источник ленты новостей ";
@@ -25,6 +30,12 @@ namespace mp3ehb.ViewComponents
         private readonly IConfigurationSection _rssFeedsSection;
         private readonly Dictionary<string, FeedList> _rssFeeds;
 
+        #endregion
+
+        /// <summary>
+        /// Primary constructor for RssFeedViewComponent takes connection string from configuration
+        /// </summary>
+        /// <param name="configuration">The <see cref="IConfigurationRoot"/> instance</param>
         public RssFeedViewComponent(IConfigurationRoot configuration)
         {
             this._rssFeedsSection = configuration.GetSection(RSSFEEDS_SECTION);
@@ -43,7 +54,9 @@ namespace mp3ehb.ViewComponents
             return View(feedName, feedList);
         }
 
-        private static FeedList CreateErrorFeedList(string feedName)
+        #region Private methods
+
+        private FeedList CreateErrorFeedList(string feedName)
         {
             return new FeedList
             {
@@ -118,13 +131,6 @@ namespace mp3ehb.ViewComponents
             });
         }
 
-        private DateTime ParseDate(string dtString, string format)
-        {
-            DateTime result;
-            bool valid = DateTime.TryParseExact(dtString, format, CultureInfo.InvariantCulture, 
-                DateTimeStyles.AssumeUniversal, out result);
-            return result;
-        }
         private DateTime ParseDate(string dtString)
         {
             DateTime result;
@@ -134,5 +140,7 @@ namespace mp3ehb.ViewComponents
             if (!valid) result = default(DateTime);
             return result;
         }
+
+        #endregion
     }
 }

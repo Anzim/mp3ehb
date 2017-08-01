@@ -3,7 +3,7 @@
 namespace mp3ehb.Entities
 {
     /// <summary>
-    /// Category entity
+    ///     POCO class for Category entity
     /// </summary>
     /// <Author>Andriy Zymenko</Author>
     public partial class Category
@@ -12,6 +12,8 @@ namespace mp3ehb.Entities
         {
             this.Contents = new HashSet<Content>();
         }
+
+        #region Public properties
 
         public int Id { get; set; }
         public int? AssetId { get; set; }
@@ -40,9 +42,15 @@ namespace mp3ehb.Entities
         public int Hits { get; set; }
         public string Language { get; set; }
 
+        #endregion
+
+        #region Navigation properties
+
         public virtual ICollection<Content> Contents { get; set; }
         public virtual Asset Asset { get; set; }
         public virtual Category Parent { get; set; }
         public virtual ICollection<Category> Children { get; set; }
+
+        #endregion
     }
 }

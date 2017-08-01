@@ -2,8 +2,13 @@
 
 namespace mp3ehb.Entities
 {
+    /// <summary>
+    ///     POCO class for Content entity
+    /// </summary>
     public partial class Content
     {
+        #region Public properties
+
         public int Id { get; set; }
         public int AssetId { get; set; }
         public string Title { get; set; }
@@ -38,10 +43,16 @@ namespace mp3ehb.Entities
         public short Featured { get; set; }
         public string Language { get; set; }
         public string XReference { get; set; }
+        
+        #endregion
+
+        #region Navigation properties
 
         public virtual Asset Asset { get; set; }
         public virtual Category Category { get; set; }
         public virtual Content Parent { get; set; }
         public virtual ICollection<Content> Children { get; set; }
+
+        #endregion
     }
 }

@@ -1,5 +1,8 @@
 ﻿namespace mp3ehb.Entities
 {
+    /// <summary>
+    ///     POCO class for Menu entity
+    /// </summary>
     public partial class Menu
     {
         public int Id { get; set; }
